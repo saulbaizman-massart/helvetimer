@@ -16,12 +16,20 @@
 
 <!--<p><a href="set.html">set the timer</a></p>-->
 
+<!--https://stackoverflow.com/questions/32621988/electron-jquery-is-not-defined-->
+<!-- Insert this line above script imports  -->
+<script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+
 <!-- The core Firebase JS SDK is always required and must be listed first -->
 <script src="https://www.gstatic.com/firebasejs/8.2.7/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.2.7/firebase-firestore.js"></script>
 
 <!-- jQuery -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<!--https://stackoverflow.com/questions/32621988/electron-jquery-is-not-defined-->
+<!-- Insert this line after script imports -->
+<script>if (window.module) module = window.module;</script>
 
 <!-- Local scripts -->
 <script src="js.js"></script>
