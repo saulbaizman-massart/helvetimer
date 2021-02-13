@@ -5,6 +5,10 @@ let hours, minutes, seconds = 0;
 let timer; // reference to interval handle
 let interval_amount = 1000; // 1 second
 let DEBUG = true;
+let SOUND_DIR = 'mp3' ;
+let timer_completed_sound = [SOUND_DIR,'completed.mp3'].join('/') ;
+// let timer_reset_sound = [SOUND_DIR,''].join('/') ;
+let one_minute_warning_sound = [SOUND_DIR,'one-minute-warning.mp3'].join('/') ;
 
 
 jQuery(document).ready(function () {
@@ -57,8 +61,6 @@ jQuery(document).ready(function () {
 
         }
 
-        // console.log('has_time_remaining:', has_time_remaining);
-
     });
 
     // reset
@@ -91,6 +93,7 @@ jQuery(document).ready(function () {
         let viewer_hours = jQuery('#timer_viewer_hours');
         let viewer_minutes = jQuery('#timer_viewer_minutes');
         let viewer_seconds = jQuery('#timer_viewer_seconds');
+        let previous_duration ;
 
         // load timer duration from firebase, update the timer values
         // let timerRef = db.collection("timers").doc("timer1");
@@ -102,10 +105,21 @@ jQuery(document).ready(function () {
                         viewer_hours.html(format_digit(convert_duration(duration, 'hours')));
                         viewer_minutes.html(format_digit(convert_duration(duration, 'minutes')));
                         viewer_seconds.html(format_digit(convert_duration(duration, 'seconds')));
-                        // console.log("Document data:", doc.data());
+                        // one-minute warning.
+                        if ( duration == 60 ) {
+                            new Audio(one_minute_warning_sound).play() ;
+                        }
+                        // timer completed.
+                        // we keep track of the previous duration so that initial page-load or timer reset does not trigger the audio.
+                        if ( duration == 0 && previous_duration == 1 ) {
+                            new Audio(timer_completed_sound).play() ;
+                        }
+
+                        previous_duration = duration ;
+
                     } else {
                         // doc.data() will be undefined in this case
-                        console.log("No such document.");
+                        DEBUG && console.log("timer1 does not exist.");
                     }
 
                 } );
@@ -164,11 +178,16 @@ function startTimer(hours, minutes, seconds) {
                     console.error("Error writing document: ", error);
                 });
 
+            // one minute warning
+            if ( seconds_remaining == 60 ) {
+                DEBUG && console.log ('one minute warning') ;
+                new Audio(one_minute_warning_sound).play() ;
+            }
+
             DEBUG && console.log('--');
 
             if (seconds_remaining <= 0) {
                 // Timer is done! Stop.
-                DEBUG && console.log('BEEP'); // FIXME: do more
                 resetTimer(true);
             }
         }
@@ -209,10 +228,10 @@ Set the timer back to its default settings.
  */
 function resetTimer(has_completed) {
 
+    // emit completed tone.
     if (has_completed) {
-        // anything here?
-        DEBUG && console.log('completed');
-        has_completed = false;
+        DEBUG && console.log('Timer completed.');
+        new Audio(timer_completed_sound).play();
     }
 
     // make fields editable again
