@@ -32,7 +32,7 @@ jQuery(document).ready(function () {
             has_time_remaining = true;
 
             // disable fields from editing
-            toggle_field_editability();
+            toggle_field_editability( false );
             startTimer();
 
             // update firestore
@@ -216,7 +216,7 @@ function resetTimer(has_completed) {
     }
 
     // make fields editable again
-    toggle_field_editability();
+    toggle_field_editability( true );
 
     // remove interval
     clearInterval(timer);
@@ -241,12 +241,12 @@ function resetTimer(has_completed) {
 /*
 When timer is running, fields are not editable.
  */
-function toggle_field_editability() {
+function toggle_field_editability ( is_editable ) {
 
-    if (!jQuery('body#setter input#seconds').prop("disabled")) {
-        jQuery('body#setter input[type=number]').prop("disabled", true)
-    } else {
+    if ( is_editable ) {
         jQuery('body#setter input[type=number]').prop("disabled", false)
+    } else {
+        jQuery('body#setter input[type=number]').prop("disabled", true)
     }
 
 }
