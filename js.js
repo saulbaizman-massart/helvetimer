@@ -158,7 +158,7 @@ function startTimer(hours, minutes, seconds) {
                 is_paused: "false"
             })
                 .then(() => {
-                    DEBUG && console.log("Timer resumed.");
+                    DEBUG && console.log("Timer updated.");
                 })
                 .catch((error) => {
                     console.error("Error writing document: ", error);
