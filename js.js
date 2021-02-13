@@ -51,33 +51,9 @@ jQuery(document).ready(function () {
             is_paused = true;
             start_button.val('resume');
 
-            // update firestore
-            db.collection("timers").doc("timer1").set({
-                duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds')),
-                is_paused: "true"
-            })
-                .then(() => {
-                    DEBUG && console.log("Timer paused.");
-                })
-                .catch((error) => {
-                    console.error("Error writing document: ", error);
-                });
-
         } else if (start_button.val() == 'resume') {
             is_paused = false;
             start_button.val('pause');
-
-            // update firestore
-            db.collection("timers").doc("timer1").set({
-                duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds')),
-                is_paused: "false"
-            })
-                .then(() => {
-                    DEBUG && console.log("Timer resumed.");
-                })
-                .catch((error) => {
-                    console.error("Error writing document: ", error);
-                });
 
         }
 
@@ -116,30 +92,23 @@ jQuery(document).ready(function () {
         let viewer_minutes = jQuery('#timer_viewer_minutes');
         let viewer_seconds = jQuery('#timer_viewer_seconds');
 
-        /*
-                console.log ('viewer_hours:',viewer_hours.html());
-                console.log ('viewer_minutes:',viewer_minutes.html());
-                console.log ('viewer_seconds:',viewer_seconds.html());
-        */
-
         // load timer duration from firebase, update the timer values
-        db.collection("timers").onSnapshot(function (querySnapshot) {
+        // let timerRef = db.collection("timers").doc("timer1");
+        let timerRef = db.collection("timers").doc("timer1")
+            .onSnapshot({},
+                (doc) => {
+                    if (doc.exists) {
+                        let duration = doc.data().duration;
+                        viewer_hours.html(format_digit(convert_duration(duration, 'hours')));
+                        viewer_minutes.html(format_digit(convert_duration(duration, 'minutes')));
+                        viewer_seconds.html(format_digit(convert_duration(duration, 'seconds')));
+                        // console.log("Document data:", doc.data());
+                    } else {
+                        // doc.data() will be undefined in this case
+                        console.log("No such document.");
+                    }
 
-            db.collection("timers").doc("timer1").get ( ) ;
-            // FIXME: simplify this. just retrieve metadata from single document, time1, in the document store.
-            querySnapshot.forEach(function (doc) {
-                let timer_details = {
-                    duration: doc.data().duration,
-                    is_paused: doc.data().is_paused
-                }
-                DEBUG && console.log(timer_details);
-
-                viewer_hours.html(format_digit(convert_duration(timer_details.duration, 'hours')));
-                viewer_minutes.html(format_digit(convert_duration(timer_details.duration, 'minutes')));
-                viewer_seconds.html(format_digit(convert_duration(timer_details.duration, 'seconds')));
-            });
-        });
-
+                } );
     }
 
 });
@@ -222,7 +191,7 @@ Set time.
 function set_time(increment, value) {
 
     // For double-digit display, prepend a zero to single digits.
-    let two_digit_value = format_digit ( value ) ;
+    let two_digit_value = format_digit(value);
 
     jQuery('body#setter input#' + increment).val(two_digit_value);
 
@@ -231,7 +200,7 @@ function set_time(increment, value) {
 /*
 Prepend zero, if needed, to single digits.
  */
-function format_digit ( value ) {
+function format_digit(value) {
     return parseInt(value) < 10 ? "0" + value : value;
 }
 
