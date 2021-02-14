@@ -1,5 +1,6 @@
 let has_time_remaining = false; // is there time remaining?
 let is_paused = false; // is the timer paused?
+let timer_has_started = false ; // flag to track whether timer has started.
 let original_duration = 0; // FIXME. needed for progress bar
 let hours, minutes, seconds = 0;
 let timer; // reference to interval handle
@@ -16,9 +17,9 @@ jQuery(document).ready(function () {
     // start / pause / resume
     jQuery('body#setter input#start').on("click", function (event) {
         let start_button = jQuery('body#setter input#start');
-        DEBUG && console.log('clicked', start_button.val());
+        DEBUG && console.log('clicked', start_button.attr('class'));
 
-        if (start_button.val() == 'start') {
+        if (start_button.attr('class') == 'play_button') {
             hours = get_time('hours');
             minutes = get_time('minutes');
             seconds = get_time('seconds');
@@ -26,18 +27,23 @@ jQuery(document).ready(function () {
 
             // don't start if the values are all zero
             if (!parseInt(hours) && !parseInt(minutes) && !parseInt(seconds)) {
-                DEBUG && console.log('0 0 0');
+                DEBUG && console.log('00:00:00');
                 return;
             }
 
-            start_button.val('pause');
+            // update start button icon
+            start_button.removeClass('play_button');
+            start_button.addClass('pause_button');
 
             is_paused = false;
             has_time_remaining = true;
 
             // disable fields from editing
             toggle_field_editability( false );
-            startTimer();
+
+            if ( ! timer_has_started ) {
+                timer_has_started = true ;
+                startTimer();
 
             // update firestore
             db.collection("timers").doc("timer1").set({
@@ -50,14 +56,14 @@ jQuery(document).ready(function () {
                 .catch((error) => {
                     console.error("Error writing document: ", error);
                 });
+            }
 
-        } else if (start_button.val() == 'pause') {
+        } else if (start_button.attr('class') == 'pause_button') {
             is_paused = true;
-            start_button.val('resume');
 
-        } else if (start_button.val() == 'resume') {
-            is_paused = false;
-            start_button.val('pause');
+            // update start button icon
+            start_button.removeClass('pause_button');
+            start_button.addClass('play_button');
 
         }
 
@@ -127,7 +133,7 @@ jQuery(document).ready(function () {
 
 });
 
-function startTimer(hours, minutes, seconds) {
+function startTimer( ) {
 
     timer = setInterval(function () {
 
@@ -234,14 +240,17 @@ function resetTimer(has_completed) {
         new Audio(timer_completed_sound).play();
     }
 
+    timer_has_started = false ;
+    
     // make fields editable again
     toggle_field_editability( true );
 
     // remove interval
     clearInterval(timer);
 
-    // update start button label to default
-    jQuery('body#setter input#start').val('start');
+    // update start button icon
+    jQuery('body#setter input#start').removeClass('pause_button');
+    jQuery('body#setter input#start').addClass('play_button');
 
     // reset important flags
     has_time_remaining = false;

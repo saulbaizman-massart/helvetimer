@@ -27,12 +27,37 @@ input[type=button] {
     margin: 0 20px ;
 }
 
+/* no keyboard focus visual indicator outline. */
+input[type=button]:focus {
+    outline: none ;
+}
+
+input#start {
+    color: rgba(0,0,0,0); /* invisible text */
+    background-repeat: no-repeat;
+    background-position: center center;
+    height: 80px;
+    width: 80px;
+    background-size: 80px 80px;
+    align-items: center;
+}
+
+input#start.play_button {
+    background-image: url(img/play-button.svg);
+}
+
+input#start.pause_button {
+    background-image: url(img/pause-button.svg);
+}
+
 body {
     text-align: center;
 }
 
 body#setter #actions {
     margin-top: 20px;
+    display: flex;
+    justify-content: center;
 }
 
 body#setter div#page_container {
