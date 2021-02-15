@@ -1,15 +1,12 @@
-let has_time_remaining = false; // is there time remaining?
-let is_paused = false; // is the timer paused?
-let timer_has_started = false ; // flag to track whether timer has started.
 let original_duration = 0; // FIXME. needed for progress bar
 let hours, minutes, seconds = 0;
-let timer; // reference to interval handle
+let timer = false; // reference to interval handle
 let interval_amount = 1000; // 1 second
 let DEBUG = true;
-let SOUND_DIR = 'mp3' ;
-let timer_completed_sound = [SOUND_DIR,'completed.mp3'].join('/') ;
+let SOUND_DIR = 'mp3';
+let timer_completed_sound = [SOUND_DIR, 'completed.mp3'].join('/');
 // let timer_reset_sound = [SOUND_DIR,''].join('/') ;
-let one_minute_warning_sound = [SOUND_DIR,'one-minute-warning.mp3'].join('/') ;
+let one_minute_warning_sound = [SOUND_DIR, 'one-minute-warning.mp3'].join('/');
 
 
 jQuery(document).ready(function () {
@@ -35,31 +32,27 @@ jQuery(document).ready(function () {
             start_button.removeClass('play_button');
             start_button.addClass('pause_button');
 
-            is_paused = false;
-            has_time_remaining = true;
-
             // disable fields from editing
-            toggle_field_editability( false );
+            toggle_field_editability(false);
 
-            if ( ! timer_has_started ) {
-                timer_has_started = true ;
+            if (!timer) {
                 startTimer();
 
-            // update firestore
-            db.collection("timers").doc("timer1").set({
-                duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds')),
-                is_paused: "false"
-            })
-                .then(() => {
-                    DEBUG && console.log("Timer started.");
+                // update firestore
+                db.collection("timers").doc("timer1").set({
+                    duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds'))
                 })
-                .catch((error) => {
-                    console.error("Error writing document: ", error);
-                });
+                    .then(() => {
+                        DEBUG && console.log("Timer started.");
+                    })
+                    .catch((error) => {
+                        console.error("Error writing document: ", error);
+                    });
             }
 
         } else if (start_button.attr('class') == 'pause_button') {
-            is_paused = true;
+            clearInterval(timer);
+            timer = false;
 
             // update start button icon
             start_button.removeClass('pause_button');
@@ -80,8 +73,7 @@ jQuery(document).ready(function () {
 
         // update firestore
         db.collection("timers").doc("timer1").set({
-            duration: 0,
-            is_paused: "true"
+            duration: 0
         })
             .then(() => {
                 DEBUG && console.log("Timer reset.");
@@ -93,13 +85,28 @@ jQuery(document).ready(function () {
 
     });
 
+    // zero-pad the number input fields.
+    /*
+    jQuery('body#setter input[type=number]').on('change', function () {
+        // DEBUG && console.log ('input changed') ;
+
+        let input = jQuery(this);
+
+        DEBUG && console.log('id:', input.attr('id'));
+        DEBUG && console.log('input_value:', input.val());
+
+        input.val(format_digit(input.val()));
+
+    });
+    */
+
     /* Viewer / client. */
     if (jQuery('body#viewer').length == 1) {
         DEBUG && console.log('viewer has loaded');
         let viewer_hours = jQuery('#timer_viewer_hours');
         let viewer_minutes = jQuery('#timer_viewer_minutes');
         let viewer_seconds = jQuery('#timer_viewer_seconds');
-        let previous_duration ;
+        let previous_duration;
 
         // load timer duration from firebase, update the timer values
         // let timerRef = db.collection("timers").doc("timer1");
@@ -112,90 +119,83 @@ jQuery(document).ready(function () {
                         viewer_minutes.html(format_digit(convert_duration(duration, 'minutes')));
                         viewer_seconds.html(format_digit(convert_duration(duration, 'seconds')));
                         // one-minute warning.
-                        if ( duration == 60 ) {
-                            new Audio(one_minute_warning_sound).play() ;
+                        if (duration == 60) {
+                            new Audio(one_minute_warning_sound).play();
                         }
                         // timer completed.
                         // we keep track of the previous duration so that initial page-load or timer reset does not trigger the audio.
-                        if ( duration == 0 && previous_duration == 1 ) {
-                            new Audio(timer_completed_sound).play() ;
+                        if (duration == 0 && previous_duration == 1) {
+                            new Audio(timer_completed_sound).play();
                         }
 
-                        previous_duration = duration ;
+                        previous_duration = duration;
 
                     } else {
                         // doc.data() will be undefined in this case
                         DEBUG && console.log("timer1 does not exist.");
                     }
 
-                } );
+                });
     }
 
 });
 
-function startTimer( ) {
+function startTimer() {
 
     timer = setInterval(function () {
 
-        if (is_paused) {
-            return;
+        hours = get_time('hours');
+        DEBUG && console.log('hours:', hours);
+        minutes = get_time('minutes');
+        DEBUG && console.log('minutes:', minutes);
+        seconds = get_time('seconds');
+        DEBUG && console.log('seconds:', seconds);
+
+        // convert remaining time to seconds
+        let seconds_remaining = parseInt(hours * 60 * 60) + parseInt(minutes * 60) + parseInt(seconds);
+
+        // reduce seconds by 1.
+        --seconds_remaining;
+        DEBUG && console.log('seconds_remaining:', seconds_remaining);
+        // console.log ('original_duration:',original_duration);
+
+        // convert from seconds to hours.
+        let new_hours = convert_duration(seconds_remaining, 'hours');
+        // convert from seconds to minutes, less the hours.
+        // number of seconds divided by 60 provides the minutes, and we have to subtract the hours as minutes.
+        // let new_minutes = Math.floor(seconds_remaining / 60) - (new_hours * 60);
+        let new_minutes = convert_duration(seconds_remaining, 'minutes');
+        let new_seconds = convert_duration(seconds_remaining, 'seconds');
+        DEBUG && console.log('new_hours:', new_hours);
+        DEBUG && console.log('new_minutes:', new_minutes);
+        DEBUG && console.log('new_seconds:', new_seconds);
+
+        set_time('hours', new_hours);
+        set_time('minutes', new_minutes);
+        set_time('seconds', new_seconds);
+
+        // update firestore
+        db.collection("timers").doc("timer1").set({
+            duration: seconds_remaining
+        })
+            .then(() => {
+                DEBUG && console.log("Timer updated.");
+            })
+            .catch((error) => {
+                console.error("Error writing document: ", error);
+            });
+
+        // one minute warning
+        if (seconds_remaining == 60) {
+            DEBUG && console.log('one minute warning');
+            new Audio(one_minute_warning_sound).play();
         }
 
-        if (has_time_remaining) {
-            hours = get_time('hours');
-            DEBUG && console.log('hours:', hours);
-            minutes = get_time('minutes');
-            DEBUG && console.log('minutes:', minutes);
-            seconds = get_time('seconds');
-            DEBUG && console.log('seconds:', seconds);
+        DEBUG && console.log('--');
 
-            // convert remaining time to seconds
-            let seconds_remaining = parseInt(hours * 60 * 60) + parseInt(minutes * 60) + parseInt(seconds);
-
-            // reduce seconds by 1.
-            --seconds_remaining;
-            DEBUG && console.log('seconds_remaining:', seconds_remaining);
-            // console.log ('original_duration:',original_duration);
-
-            // convert from seconds to hours.
-            let new_hours = convert_duration(seconds_remaining, 'hours');
-            // convert from seconds to minutes, less the hours.
-            // number of seconds divided by 60 provides the minutes, and we have to subtract the hours as minutes.
-            // let new_minutes = Math.floor(seconds_remaining / 60) - (new_hours * 60);
-            let new_minutes = convert_duration(seconds_remaining, 'minutes');
-            let new_seconds = convert_duration(seconds_remaining, 'seconds');
-            DEBUG && console.log('new_hours:', new_hours);
-            DEBUG && console.log('new_minutes:', new_minutes);
-            DEBUG && console.log('new_seconds:', new_seconds);
-
-            set_time('hours', new_hours);
-            set_time('minutes', new_minutes);
-            set_time('seconds', new_seconds);
-
-            // update firestore
-            db.collection("timers").doc("timer1").set({
-                duration: seconds_remaining,
-                is_paused: "false"
-            })
-                .then(() => {
-                    DEBUG && console.log("Timer updated.");
-                })
-                .catch((error) => {
-                    console.error("Error writing document: ", error);
-                });
-
-            // one minute warning
-            if ( seconds_remaining == 60 ) {
-                DEBUG && console.log ('one minute warning') ;
-                new Audio(one_minute_warning_sound).play() ;
-            }
-
-            DEBUG && console.log('--');
-
-            if (seconds_remaining <= 0) {
-                // Timer is done! Stop.
-                resetTimer(true);
-            }
+        if (seconds_remaining <= 0) {
+            // Timer is done! Stop.
+            resetTimer(true);
         }
     }, interval_amount);
 
@@ -240,21 +240,17 @@ function resetTimer(has_completed) {
         new Audio(timer_completed_sound).play();
     }
 
-    timer_has_started = false ;
-    
     // make fields editable again
-    toggle_field_editability( true );
+    toggle_field_editability(true);
 
     // remove interval
     clearInterval(timer);
 
+    timer = false;
+
     // update start button icon
     jQuery('body#setter input#start').removeClass('pause_button');
     jQuery('body#setter input#start').addClass('play_button');
-
-    // reset important flags
-    has_time_remaining = false;
-    is_paused = false;
 
     // set fields to default values
     set_time('hours', '0');
@@ -269,10 +265,10 @@ function resetTimer(has_completed) {
 /*
 When timer is running, fields are not editable.
  */
-function toggle_field_editability ( is_editable ) {
+function toggle_field_editability(is_editable) {
 
-    if ( is_editable ) {
         jQuery('body#setter input[type=number]').prop("disabled", false)
+    if (is_editable) {
     } else {
         jQuery('body#setter input[type=number]').prop("disabled", true)
     }
