@@ -7,7 +7,7 @@ let SOUND_DIR = 'mp3';
 let timer_completed_sound = [SOUND_DIR, 'completed.mp3'].join('/');
 // let timer_reset_sound = [SOUND_DIR,''].join('/') ;
 let one_minute_warning_sound = [SOUND_DIR, 'one-minute-warning.mp3'].join('/');
-
+let timer_doc = 'timer2';
 
 jQuery(document).ready(function () {
 
@@ -39,7 +39,7 @@ jQuery(document).ready(function () {
                 startTimer();
 
                 // update firestore
-                db.collection("timers").doc("timer1").set({
+                db.collection("timers").doc(timer_doc).set({
                     duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds'))
                 })
                     .then(() => {
@@ -72,7 +72,7 @@ jQuery(document).ready(function () {
         resetTimer(false);
 
         // update firestore
-        db.collection("timers").doc("timer1").set({
+        db.collection("timers").doc(timer_doc).set({
             duration: 0
         })
             .then(() => {
@@ -109,8 +109,8 @@ jQuery(document).ready(function () {
         let previous_duration;
 
         // load timer duration from firebase, update the timer values
-        // let timerRef = db.collection("timers").doc("timer1");
-        let timerRef = db.collection("timers").doc("timer1")
+        // let timerRef = db.collection("timers").doc(timer_doc);
+        let timerRef = db.collection("timers").doc(timer_doc)
             .onSnapshot({},
                 (doc) => {
                     if (doc.exists) {
@@ -132,7 +132,7 @@ jQuery(document).ready(function () {
 
                     } else {
                         // doc.data() will be undefined in this case
-                        DEBUG && console.log("timer1 does not exist.");
+                        DEBUG && console.log(timer_doc,"does not exist.");
                     }
 
                 });
@@ -175,7 +175,7 @@ function startTimer() {
         set_time('seconds', new_seconds);
 
         // update firestore
-        db.collection("timers").doc("timer1").set({
+        db.collection("timers").doc(timer_doc).set({
             duration: seconds_remaining
         })
             .then(() => {
