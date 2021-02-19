@@ -7,7 +7,7 @@ let SOUND_DIR = 'mp3';
 let timer_completed_sound = [SOUND_DIR, 'completed.mp3'].join('/');
 // let timer_reset_sound = [SOUND_DIR,''].join('/') ;
 let one_minute_warning_sound = [SOUND_DIR, 'one-minute-warning.mp3'].join('/');
-let timer_doc = 'timer2';
+let timer_doc = 'timer1';
 
 jQuery(document).ready(function () {
 
