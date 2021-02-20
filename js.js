@@ -1,3 +1,6 @@
+// Much of this code, in concept and sometimes more than concept, was borrowed from this webpage:
+// https://stackoverflow.com/questions/20618355/the-simplest-possible-javascript-countdown-timer
+
 let original_duration = 0; // FIXME. needed for progress bar
 let hours, minutes, seconds = 0;
 let timer = false; // reference to interval handle
@@ -8,6 +11,7 @@ let timer_completed_sound = [SOUND_DIR, 'completed.mp3'].join('/');
 // let timer_reset_sound = [SOUND_DIR,''].join('/') ;
 let one_minute_warning_sound = [SOUND_DIR, 'one-minute-warning.mp3'].join('/');
 let timer_doc = 'timer2';
+let previous_hours, previous_minutes, previous_seconds = 0;
 
 jQuery(document).ready(function () {
 
@@ -100,6 +104,58 @@ jQuery(document).ready(function () {
     });
     */
 
+    // keep length of input number fields to two characters
+    // hope they're actually numbers!
+    // https://stackoverflow.com/questions/18510845/maxlength-ignored-for-input-type-number-in-chrome
+    jQuery('body#setter input[type=number]').on('keyup', function () {
+        let number_field = jQuery(this);
+        DEBUG && console.log('input changed on #' + number_field.attr('id'));
+
+        let field_max_length = 2;
+        let truncated_value;
+        DEBUG && console.log('new value:', number_field.val());
+        DEBUG && console.log('new value length:', number_field.val().length);
+        if (number_field.val().length > field_max_length) {
+
+            switch (number_field.attr('id')) {
+                case 'hours':
+                    DEBUG && console.log('previous hours:', previous_hours);
+                    truncated_value = get_truncated_value(number_field, previous_hours, number_field.attr('max'))
+                    break;
+
+                case 'minutes':
+                    DEBUG && console.log('previous hours:', previous_minutes);
+                    truncated_value = get_truncated_value(number_field, previous_minutes, number_field.attr('max'))
+                    break;
+
+                case 'seconds':
+                    DEBUG && console.log('previous hours:', previous_seconds);
+                    truncated_value = get_truncated_value(number_field, previous_seconds, number_field.attr('max'))
+                    break;
+
+                default:
+                    break;
+            }
+            // update number field value to new 2-digit item.
+            number_field.val(truncated_value);
+        }
+        switch (number_field.attr('id')) {
+            case 'hours':
+                previous_hours = number_field.val();
+                break;
+            case 'minutes':
+                previous_minutes = number_field.val();
+                break;
+            case 'seconds':
+                previous_seconds = number_field.val();
+                break;
+        }
+        DEBUG && console.log('previous_hours:', previous_hours);
+        DEBUG && console.log('previous_minutes:', previous_minutes);
+        DEBUG && console.log('previous_seconds:', previous_seconds);
+
+    });
+
     /* Viewer / client. */
     if (jQuery('body#viewer').length == 1) {
         DEBUG && console.log('viewer has loaded');
@@ -132,7 +188,7 @@ jQuery(document).ready(function () {
 
                     } else {
                         // doc.data() will be undefined in this case
-                        DEBUG && console.log(timer_doc,"does not exist.");
+                        DEBUG && console.log(timer_doc, "does not exist.");
                     }
 
                 });
@@ -267,7 +323,7 @@ When timer is running, fields are not editable.
  */
 function toggle_field_editability(is_editable) {
 
-        jQuery('body#setter input[type=number]').prop("disabled", false)
+    jQuery('body#setter input[type=number]').prop("disabled", false)
     if (is_editable) {
     } else {
         jQuery('body#setter input[type=number]').prop("disabled", true)
@@ -312,4 +368,48 @@ function convert_duration(duration, increment) {
             return false;
     }
 
+}
+
+// was a number added to the beginning, middle, or end?
+
+// location of 21 in...
+// 213 (number added to ended): chop off "2", chop off first character
+// 421 (number added to beginning): chop off "1", chop off last character
+// 271 (number added to "middle"): chop off "1", chop off last character
+
+// if the last two characters are the same as the previous_ value, remove the first character
+
+function get_truncated_value(field, previous_value, maximum_value) {
+    let first_character_position = 0;
+    let field_current_value = field.val();
+    let new_truncated_value;
+    let new_position = field_current_value.indexOf(previous_value);
+
+    // character inserted at end, chop off beginning
+    if (new_position == 0) {
+        DEBUG && console.log('removing the first character');
+        first_character_position = field_current_value.length - 2;
+        // DEBUG && console.log('first_character_position:', first_character_position);
+        new_truncated_value = field_current_value.slice(first_character_position);
+    }
+    // character inserted at beginning, chop off end
+    else if (new_position > 0) {
+        new_truncated_value = field_current_value.slice(first_character_position, first_character_position + 2)
+    }
+    // character likely inserted into the middle, chop off end
+    else if (new_position == -1) {
+        new_truncated_value = field_current_value.slice(first_character_position, first_character_position + 2)
+    }
+
+    // if the new value is greater than the allowed maximum, set it to the maximum value.
+    /*
+    if (new_truncated_value > maximum_value) {
+        DEBUG && console.warn('warning:',new_truncated_value,'is greater than the allowed maximum,',maximum_value) ;
+        new_truncated_value = maximum_value ;
+    }
+    */
+
+    DEBUG && console.log('new_truncated_value', new_truncated_value)
+
+    return new_truncated_value;
 }
