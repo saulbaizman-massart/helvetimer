@@ -62,6 +62,8 @@ jQuery(document).ready(function () {
             start_button.removeClass('pause_button');
             start_button.addClass('play_button');
 
+            toggle_field_editability ( true ) ;
+
         }
 
     });
