@@ -27,6 +27,22 @@ input[type=button] {
     margin: 0 20px ;
 }
 
+input#set-as-default {
+    font-size: 0.5rem ;
+    color: rgba(84,84,84,.5);
+    padding: 5px 10px;
+    /*border: 1px solid rgba(84,84,84,.5);*/
+}
+
+#default_time_container {
+    margin-top: 30px ;
+}
+
+#default_time_container #default_time_div, #default_time {
+    font-size: 0.7rem ;
+    color: rgba(84,84,84,.5);
+}
+
 /* no keyboard focus visual indicator outline. */
 input[type=button]:focus {
     outline: none ;

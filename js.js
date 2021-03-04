@@ -88,8 +88,54 @@ jQuery(document).ready(function () {
                 console.error("Error writing document: ", error);
             });
 
+        load_default_time ( ) ;
 
     });
+
+    // set as default
+    jQuery('body#setter input#set-as-default').on("click", function (event) {
+        let default_hours = get_time('hours');
+        let default_minutes = get_time('minutes');
+        let default_seconds = get_time('seconds');
+
+        // convert remaining time to seconds
+        let default_time_in_seconds = parseInt(default_hours * 60 * 60) + parseInt(default_minutes * 60) + parseInt(default_seconds);
+
+        // save to local storage
+        localStorage.default_time_in_seconds = default_time_in_seconds ;
+
+        // update user interface
+        jQuery('#default_time').text( [format_digit(default_hours),format_digit(default_minutes),format_digit(default_seconds)].join(':')) ;
+
+    });
+
+    // load default time, if applicable
+    function load_default_time ( ) {
+        if (jQuery('body#setter').length == 1) {
+            DEBUG && console.log ('loading default time...') ;
+            if ( localStorage.default_time_in_seconds > 0 ) {
+                let default_time_in_seconds = localStorage.default_time_in_seconds ;
+
+                let new_hours = convert_duration(default_time_in_seconds, 'hours');
+                // convert from seconds to minutes, less the hours.
+                // number of seconds divided by 60 provides the minutes, and we have to subtract the hours as minutes.
+                // let new_minutes = Math.floor(seconds_remaining / 60) - (new_hours * 60);
+                let new_minutes = convert_duration(default_time_in_seconds, 'minutes');
+                let new_seconds = convert_duration(default_time_in_seconds, 'seconds');
+
+                set_time('hours', new_hours);
+                set_time('minutes', new_minutes);
+                set_time('seconds', new_seconds);
+
+                // update user interface
+                jQuery('#default_time').text( [format_digit(new_hours),format_digit(new_minutes),format_digit(new_seconds)].join(':')) ;
+
+            }
+
+        }
+    }
+
+    load_default_time () ;
 
     // zero-pad the number input fields.
     /*
