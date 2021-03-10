@@ -24,7 +24,9 @@ jQuery(document).ready(function () {
             hours = get_time('hours');
             minutes = get_time('minutes');
             seconds = get_time('seconds');
-            original_duration = parseInt(hours * 60 * 60) + parseInt(minutes * 60) + parseInt(seconds);
+            if (original_duration == 0 ) {
+                original_duration = parseInt(hours * 60 * 60) + parseInt(minutes * 60) + parseInt(seconds);
+            }
 
             // don't start if the values are all zero
             if (!parseInt(hours) && !parseInt(minutes) && !parseInt(seconds)) {
@@ -39,12 +41,17 @@ jQuery(document).ready(function () {
             // disable fields from editing
             toggle_field_editability(false);
 
+            // set visual progress indicator to 0
+            // unnecessary to explicitly set it to 0. it will immediately get reset when the timer is (re)started.
+            // update_progress_bar ( 0 );
+
             if (!timer) {
                 startTimer();
 
                 // update firestore
                 db.collection("timers").doc(timer_doc).set({
-                    duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds'))
+                    duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds')),
+                    original_duration: original_duration
                 })
                     .then(() => {
                         DEBUG && console.log("Timer started.");
@@ -62,7 +69,9 @@ jQuery(document).ready(function () {
             start_button.removeClass('pause_button');
             start_button.addClass('play_button');
 
-            toggle_field_editability ( true ) ;
+            // this used to make the fields editable when the pause button was clicked.
+            // to re-enable this, we would have to check, whenever the timer was paused, if the hour, minute, or second field was edited, the original_duration would have to be updated.
+            // toggle_field_editability ( true ) ;
 
         }
 
@@ -77,9 +86,13 @@ jQuery(document).ready(function () {
 
         resetTimer(false);
 
+        // update visual progress indicator
+        update_progress_bar ( 0 );
+
         // update firestore
         db.collection("timers").doc(timer_doc).set({
-            duration: 0
+            duration: 0,
+            original_duration: original_duration
         })
             .then(() => {
                 DEBUG && console.log("Timer reset.");
@@ -219,6 +232,7 @@ jQuery(document).ready(function () {
                 (doc) => {
                     if (doc.exists) {
                         let duration = doc.data().duration;
+                        let original_duration = doc.data().original_duration;
                         viewer_hours.html(format_digit(convert_duration(duration, 'hours')));
                         viewer_minutes.html(format_digit(convert_duration(duration, 'minutes')));
                         viewer_seconds.html(format_digit(convert_duration(duration, 'seconds')));
@@ -226,6 +240,10 @@ jQuery(document).ready(function () {
                         if (duration == 60) {
                             new Audio(one_minute_warning_sound).play();
                         }
+
+                        let progress_indicator_percent = (100 - ( ( duration * 100 ) / original_duration) ) + 'vw';
+                        DEBUG && console.log('progress_indicator_percent:',progress_indicator_percent);
+                        update_progress_bar ( progress_indicator_percent );
                         // timer completed.
                         // we keep track of the previous duration so that initial page-load or timer reset does not trigger the audio.
                         if (duration == 0 && previous_duration == 1) {
@@ -261,7 +279,12 @@ function startTimer() {
         // reduce seconds by 1.
         --seconds_remaining;
         DEBUG && console.log('seconds_remaining:', seconds_remaining);
-        // console.log ('original_duration:',original_duration);
+        console.log ('original_duration:',original_duration);
+
+        // update visual progress indicator
+        let progress_indicator_percent = (100 - ( ( seconds_remaining * 100 ) / original_duration) ) + 'vw';
+        DEBUG && console.log('progress_indicator_percent:',progress_indicator_percent);
+        update_progress_bar ( progress_indicator_percent );
 
         // convert from seconds to hours.
         let new_hours = convert_duration(seconds_remaining, 'hours');
@@ -280,7 +303,8 @@ function startTimer() {
 
         // update firestore
         db.collection("timers").doc(timer_doc).set({
-            duration: seconds_remaining
+            duration: seconds_remaining,
+            original_duration: original_duration
         })
             .then(() => {
                 DEBUG && console.log("Timer updated.");
@@ -343,6 +367,8 @@ function resetTimer(has_completed) {
         DEBUG && console.log('Timer completed.');
         new Audio(timer_completed_sound).play();
     }
+
+    original_duration = 0 ;
 
     // make fields editable again
     toggle_field_editability(true);
@@ -460,4 +486,13 @@ function get_truncated_value(field, previous_value, maximum_value) {
     DEBUG && console.log('new_truncated_value', new_truncated_value)
 
     return new_truncated_value;
+}
+
+/*
+Update the visual progress bar.
+ */
+function update_progress_bar ( percentage ) {
+    jQuery('#progress_indicator').css('width',percentage);
+    // We've chosen not to use jQuery because when the window isn't in the foreground, the UI doesn't update.
+    // jQuery('#progress_indicator').animate({width: percentage}, 500,'linear') ;
 }
