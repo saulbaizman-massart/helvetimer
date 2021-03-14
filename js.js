@@ -15,7 +15,7 @@ let previous_hours, previous_minutes, previous_seconds = 0;
 
 jQuery(document).ready(function () {
 
-    // start / pause / resume
+    // start / pause
     jQuery('body#setter input#start').on("click", function (event) {
         let start_button = jQuery('body#setter input#start');
         DEBUG && console.log('clicked', start_button.attr('class'));
@@ -121,6 +121,25 @@ jQuery(document).ready(function () {
         jQuery('#default_time').text( [format_digit(default_hours),format_digit(default_minutes),format_digit(default_seconds)].join(':')) ;
 
     });
+
+    // when the user changes the value in the fields, update the time in the database, which will update the viewer.
+    // this means that the user will see the timer as it is being set and before it is started.
+    jQuery('body#setter input[type=number]').on("change", function (event) {
+        console.log('value change in number input') ;
+        // update database so changes are reflected in the viewer in near-real-time
+        // update firestore
+        db.collection("timers").doc(timer_doc).set({
+            duration: parseInt(get_time('hours') * 60 * 60) + parseInt(get_time('minutes') * 60) + parseInt(get_time('seconds')),
+            original_duration: original_duration
+        })
+            .then(() => {
+                DEBUG && console.log("Updated time in database.");
+            })
+            .catch((error) => {
+                console.error("Error writing document: ", error);
+            });
+
+    } ) ;
 
     // load default time, if applicable
     function load_default_time ( ) {
