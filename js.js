@@ -89,9 +89,11 @@ jQuery(document).ready(function () {
         // update visual progress indicator
         update_progress_bar ( 0 );
 
+        load_default_time ( ) ;
+
         // update firestore
         db.collection("timers").doc(timer_doc).set({
-            duration: 0,
+            duration: localStorage.default_time_in_seconds > 0 ? localStorage.default_time_in_seconds: 0,
             original_duration: original_duration
         })
             .then(() => {
@@ -100,8 +102,6 @@ jQuery(document).ready(function () {
             .catch((error) => {
                 console.error("Error writing document: ", error);
             });
-
-        load_default_time ( ) ;
 
     });
 
@@ -260,7 +260,9 @@ jQuery(document).ready(function () {
                             new Audio(one_minute_warning_sound).play();
                         }
 
-                        let progress_indicator_percent = (100 - ( ( duration * 100 ) / original_duration) ) + 'vw';
+                        // DEBUG && console.log ('original_duration:',original_duration) ;
+                        // prevent division by 0
+                        let progress_indicator_percent = original_duration > 0 ? (100 - ( ( duration * 100 ) / original_duration) ) + 'vw' : 0;
                         DEBUG && console.log('progress_indicator_percent:',progress_indicator_percent);
                         update_progress_bar ( progress_indicator_percent );
                         // timer completed.
@@ -512,6 +514,5 @@ Update the visual progress bar.
  */
 function update_progress_bar ( percentage ) {
     jQuery('#progress_indicator').css('width',percentage);
-    // We've chosen not to use jQuery because when the window isn't in the foreground, the UI doesn't update.
-    // jQuery('#progress_indicator').animate({width: percentage}, 500,'linear') ;
+    // We've chosen not to use jQuery for animating the progress bar because when the window isn't in the foreground, the UI doesn't update.
 }
