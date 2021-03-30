@@ -98,7 +98,7 @@ span.unit {
     width: 0vw ;
     height: 10px ;
     background-color: rgba(231,28,165,1);
-    transition: width 300ms;
+    transition: width 1s linear;
 }
 
 /*
